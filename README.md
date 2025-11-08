@@ -1,0 +1,2 @@
+# .NET_Angular_MySQL_School_Management_System
+School Management System
