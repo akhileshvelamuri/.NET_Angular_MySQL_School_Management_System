@@ -1,0 +1,58 @@
+pipeline {
+    agent any
+    
+    tools {
+        jdk 'JDK-8'
+        maven 'Maven-3.6' // Or gradle 'Gradle-7.x'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    credentialsId: 'github-credentials',
+                    url: 'https://github.com/akhileshvelamuri/.NET_Angular_MySQL_School_Management_System.git'
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                script {
+                    // For Maven
+                    sh 'mvn clean package -DskipTests'
+                    
+                    // For Gradle (uncomment if using Gradle)
+                    // sh './gradlew clean build -x test'
+                }
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                script {
+                    // For Maven
+                    sh 'mvn test'
+                    
+                    // For Gradle
+                    // sh './gradlew test'
+                }
+            }
+        }
+        
+        stage('Archive') {
+            steps {
+                archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+                // For Gradle: artifacts: '**/build/libs/*.jar'
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo 'Build completed successfully!'
+        }
+        failure {
+            echo 'Build failed!'
+        }
+    }
+}
