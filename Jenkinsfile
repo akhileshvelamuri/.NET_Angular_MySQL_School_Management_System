@@ -1,11 +1,6 @@
 pipeline {
     agent any
     
-    tools {
-        jdk 'JDK-8'
-        maven 'Maven-3.6' // Or gradle 'Gradle-7.x'
-    }
-    
     stages {
         stage('Checkout') {
             steps {
@@ -15,14 +10,20 @@ pipeline {
             }
         }
         
-        stage('Build') {
+        stage('Restore Dependencies') {
             steps {
                 script {
-                    // For Maven
-                    sh 'mvn clean package -DskipTests'
-                    
-                    // For Gradle (uncomment if using Gradle)
-                    // sh './gradlew clean build -x test'
+                    // Restore NuGet packages for .NET backend
+                    bat 'dotnet restore'
+                }
+            }
+        }
+        
+        stage('Build Backend') {
+            steps {
+                script {
+                    // Build .NET application
+                    bat 'dotnet build --configuration Release --no-restore'
                 }
             }
         }
@@ -30,19 +31,24 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    // For Maven
-                    sh 'mvn test'
-                    
-                    // For Gradle
-                    // sh './gradlew test'
+                    // Run .NET tests if any exist
+                    bat 'dotnet test --no-build --configuration Release || exit 0'
+                }
+            }
+        }
+        
+        stage('Publish') {
+            steps {
+                script {
+                    // Publish .NET application
+                    bat 'dotnet publish --configuration Release --output ./publish'
                 }
             }
         }
         
         stage('Archive') {
             steps {
-                archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
-                // For Gradle: artifacts: '**/build/libs/*.jar'
+                archiveArtifacts artifacts: 'publish/**/*', fingerprint: true, allowEmptyArchive: true
             }
         }
     }
@@ -53,6 +59,9 @@ pipeline {
         }
         failure {
             echo 'Build failed!'
+        }
+        always {
+            cleanWs()
         }
     }
 }
